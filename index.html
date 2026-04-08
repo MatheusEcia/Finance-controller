@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Controle de Finanças</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      color: #222;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 500;
+      margin-bottom: 2rem;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+      color: #444;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: #555;
+      margin-bottom: 4px;
+      margin-top: 12px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      background: #fafafa;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #888;
+    }
+
+    button {
+      margin-top: 1rem;
+      width: 100%;
+      padding: 10px;
+      background: #222;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    button:hover { background: #444; }
+
+    .saldo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .metrica {
+      background: #f8f8f8;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 0.75rem;
+      text-align: center;
+    }
+
+    .metrica .label {
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    .metrica .valor {
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+
+    .verde { color: #2a7a2a; }
+    .vermelho { color: #a32d2d; }
+    .azul { color: #185fa5; }
+
+    #mensagem {
+      font-size: 0.85rem;
+      color: #2a7a2a;
+      margin-top: 8px;
+      min-height: 18px;
+    }
+
+    /* ── LOGIN ── */
+    #tela-login {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    #tela-login .card {
+      width: 100%;
+      max-width: 360px;
+    }
+
+    #tela-login h1 {
+      margin-bottom: 1.5rem;
+      font-size: 1.4rem;
+    }
+
+    #erro-login {
+      font-size: 0.85rem;
+      color: #a32d2d;
+      margin-top: 8px;
+      min-height: 18px;
+    }
+
+    /* ── HEADER COM LOGOUT ── */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 480px;
+      margin: 0 auto 1.5rem;
+    }
+
+    .app-header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    .btn-logout {
+      width: auto;
+      margin: 0;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      background: transparent;
+      color: #555;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .btn-logout:hover {
+      background: #eee;
+      color: #222;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- ══ TELA DE LOGIN ══ -->
+  <div id="tela-login">
+    <div class="card">
+      <h1>Controle de Finanças</h1>
+
+      <label for="login-usuario">Usuário</label>
+      <input type="text" id="login-usuario" placeholder="Digite seu usuário" />
+
+      <label for="login-senha">Senha</label>
+      <input type="password" id="login-senha" placeholder="Digite sua senha" />
+
+      <button onclick="fazerLogin()">Entrar</button>
+      <div id="erro-login"></div>
+
+      <p style="font-size:0.78rem; color:#aaa; margin-top:14px; text-align:center;">
+        Usuário: <strong>admin</strong> &nbsp;|&nbsp; Senha: <strong>1234</strong>
+      </p>
+    </div>
+  </div>
+
+  <!-- ══ APP PRINCIPAL ══ -->
+  <div id="tela-app" class="hidden">
+
+    <div class="app-header">
+      <h1>Controle de Finanças</h1>
+      <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+    </div>
+
+    <div class="container">
+
+      <div class="card">
+        <h2>Adicionar transação</h2>
+
+        <label for="tipo">Tipo</label>
+        <select id="tipo">
+          <option value="receita">Receita</option>
+          <option value="despesa">Despesa</option>
+        </select>
+
+        <label for="descricao">Descrição</label>
+        <input type="text" id="descricao" placeholder="Ex: Salário, Aluguel..." />
+
+        <label for="valor">Valor (R$)</label>
+        <input type="number" id="valor" placeholder="0,00" min="0" step="0.01" />
+
+        <button onclick="adicionar()">Adicionar</button>
+        <div id="mensagem"></div>
+      </div>
+
+      <div class="card">
+        <h2>Resumo</h2>
+        <div class="saldo-grid">
+          <div class="metrica">
+            <div class="label">Receitas</div>
+            <div class="valor verde" id="totalReceitas">R$ 0,00</div>
+          </div>
+          <div class="metrica">
+            <div class="label">Despesas</div>
+            <div class="valor vermelho" id="totalDespesas">R$ 0,00</div>
+          </div>
+          <div class="metrica">
+            <div class="label">Saldo</div>
+            <div class="valor azul" id="saldo">R$ 0,00</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    /* ── CREDENCIAIS MOCK ── */
+    const USUARIOS = [
+      { usuario: "admin", senha: "1234" }
+    ];
+
+    /* ── AUTENTICAÇÃO ── */
+    function fazerLogin() {
+      const usuario = document.getElementById('login-usuario').value.trim();
+      const senha   = document.getElementById('login-senha').value;
+      const erro    = document.getElementById('erro-login');
+
+      const encontrado = USUARIOS.find(u => u.usuario === usuario && u.senha === senha);
+
+      if (!encontrado) {
+        erro.textContent = 'Usuário ou senha incorretos.';
+        return;
+      }
+
+      localStorage.setItem('logado', 'true');
+      mostrarApp();
+    }
+
+    function fazerLogout() {
+      localStorage.removeItem('logado');
+      document.getElementById('tela-app').classList.add('hidden');
+      document.getElementById('tela-login').classList.remove('hidden');
+      document.getElementById('login-usuario').value = '';
+      document.getElementById('login-senha').value = '';
+      document.getElementById('erro-login').textContent = '';
+    }
+
+    function mostrarApp() {
+      document.getElementById('tela-login').classList.add('hidden');
+      document.getElementById('tela-app').classList.remove('hidden');
+      atualizarResumo();
+    }
+
+    /* ── FINANÇAS (sem alterações) ── */
+    let transacoes = JSON.parse(localStorage.getItem('transacoes') || '[]');
+
+    function formatar(valor) {
+      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function atualizarResumo() {
+      let receitas = 0, despesas = 0;
+      transacoes.forEach(t => {
+        if (t.tipo === 'receita') receitas += t.valor;
+        else despesas += t.valor;
+      });
+      const saldo = receitas - despesas;
+
+      document.getElementById('totalReceitas').textContent = formatar(receitas);
+      document.getElementById('totalDespesas').textContent = formatar(despesas);
+
+      const elSaldo = document.getElementById('saldo');
+      elSaldo.textContent = formatar(saldo);
+      elSaldo.className = 'valor ' + (saldo >= 0 ? 'verde' : 'vermelho');
+    }
+
+    function adicionar() {
+      const tipo      = document.getElementById('tipo').value;
+      const descricao = document.getElementById('descricao').value.trim();
+      const valor     = parseFloat(document.getElementById('valor').value);
+      const msg       = document.getElementById('mensagem');
+
+      if (!descricao) { msg.style.color = '#a32d2d'; msg.textContent = 'Informe uma descrição.'; return; }
+      if (!valor || valor <= 0) { msg.style.color = '#a32d2d'; msg.textContent = 'Informe um valor válido.'; return; }
+
+      transacoes.push({ tipo, descricao, valor });
+      localStorage.setItem('transacoes', JSON.stringify(transacoes));
+
+      document.getElementById('descricao').value = '';
+      document.getElementById('valor').value = '';
+
+      msg.style.color = '#2a7a2a';
+      msg.textContent = (tipo === 'receita' ? 'Receita' : 'Despesa') + ' adicionada!';
+      setTimeout(() => msg.textContent = '', 2500);
+
+      atualizarResumo();
+    }
+
+    /* ── INICIALIZAÇÃO ── */
+    if (localStorage.getItem('logado') === 'true') {
+      mostrarApp();
+    }
+  </script>
+
+</body>
+</html>
