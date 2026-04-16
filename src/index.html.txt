@@ -15,13 +15,6 @@
       padding: 2rem 1rem;
     }
 
-    h1 {
-      text-align: center;
-      font-size: 1.6rem;
-      font-weight: 500;
-      margin-bottom: 2rem;
-    }
-
     .container {
       max-width: 480px;
       margin: 0 auto;
@@ -111,7 +104,6 @@
 
     #mensagem {
       font-size: 0.85rem;
-      color: #2a7a2a;
       margin-top: 8px;
       min-height: 18px;
     }
@@ -131,8 +123,10 @@
     }
 
     #tela-login h1 {
-      margin-bottom: 1.5rem;
+      text-align: center;
       font-size: 1.4rem;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
     }
 
     #erro-login {
@@ -142,7 +136,7 @@
       min-height: 18px;
     }
 
-    /* ── HEADER COM LOGOUT ── */
+    /* ── HEADER ── */
     .app-header {
       display: flex;
       align-items: center;
@@ -152,8 +146,8 @@
     }
 
     .app-header h1 {
-      margin: 0;
       font-size: 1.4rem;
+      font-weight: 500;
     }
 
     .btn-logout {
@@ -167,12 +161,17 @@
       border-radius: 6px;
     }
 
-    .btn-logout:hover {
-      background: #eee;
-      color: #222;
-    }
+    .btn-logout:hover { background: #eee; color: #222; }
 
     .hidden { display: none !important; }
+
+    /* ── LOADING ── */
+    #loading {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #888;
+      padding: 1rem 0;
+    }
   </style>
 </head>
 <body>
@@ -228,7 +227,8 @@
 
       <div class="card">
         <h2>Resumo</h2>
-        <div class="saldo-grid">
+        <div id="loading">Carregando...</div>
+        <div class="saldo-grid" id="resumo" style="display:none;">
           <div class="metrica">
             <div class="label">Receitas</div>
             <div class="valor verde" id="totalReceitas">R$ 0,00</div>
@@ -248,6 +248,8 @@
   </div>
 
   <script>
+    const API = 'https://finance-controller-api.onrender.com/api/transacoes';
+
     /* ── CREDENCIAIS MOCK ── */
     const USUARIOS = [
       { usuario: "admin", senha: "1234" }
@@ -260,7 +262,6 @@
       const erro    = document.getElementById('erro-login');
 
       const encontrado = USUARIOS.find(u => u.usuario === usuario && u.senha === senha);
-
       if (!encontrado) {
         erro.textContent = 'Usuário ou senha incorretos.';
         return;
@@ -282,33 +283,44 @@
     function mostrarApp() {
       document.getElementById('tela-login').classList.add('hidden');
       document.getElementById('tela-app').classList.remove('hidden');
-      atualizarResumo();
+      carregarResumo();
     }
 
-    /* ── FINANÇAS (sem alterações) ── */
-    let transacoes = JSON.parse(localStorage.getItem('transacoes') || '[]');
-
+    /* ── FINANÇAS ── */
     function formatar(valor) {
-      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
-    function atualizarResumo() {
-      let receitas = 0, despesas = 0;
-      transacoes.forEach(t => {
-        if (t.tipo === 'receita') receitas += t.valor;
-        else despesas += t.valor;
-      });
-      const saldo = receitas - despesas;
+    async function carregarResumo() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('resumo').style.display  = 'none';
 
-      document.getElementById('totalReceitas').textContent = formatar(receitas);
-      document.getElementById('totalDespesas').textContent = formatar(despesas);
+      try {
+        const res  = await fetch(API);
+        const data = await res.json();
 
-      const elSaldo = document.getElementById('saldo');
-      elSaldo.textContent = formatar(saldo);
-      elSaldo.className = 'valor ' + (saldo >= 0 ? 'verde' : 'vermelho');
+        let receitas = 0, despesas = 0;
+        data.forEach(t => {
+          if (t.tipo === 'receita') receitas += parseFloat(t.valor);
+          else despesas += parseFloat(t.valor);
+        });
+
+        const saldo = receitas - despesas;
+        document.getElementById('totalReceitas').textContent = formatar(receitas);
+        document.getElementById('totalDespesas').textContent = formatar(despesas);
+
+        const elSaldo = document.getElementById('saldo');
+        elSaldo.textContent = formatar(saldo);
+        elSaldo.className = 'valor ' + (saldo >= 0 ? 'verde' : 'vermelho');
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('resumo').style.display  = 'grid';
+      } catch (err) {
+        document.getElementById('loading').textContent = 'Erro ao carregar dados.';
+      }
     }
 
-    function adicionar() {
+    async function adicionar() {
       const tipo      = document.getElementById('tipo').value;
       const descricao = document.getElementById('descricao').value.trim();
       const valor     = parseFloat(document.getElementById('valor').value);
@@ -317,17 +329,25 @@
       if (!descricao) { msg.style.color = '#a32d2d'; msg.textContent = 'Informe uma descrição.'; return; }
       if (!valor || valor <= 0) { msg.style.color = '#a32d2d'; msg.textContent = 'Informe um valor válido.'; return; }
 
-      transacoes.push({ tipo, descricao, valor });
-      localStorage.setItem('transacoes', JSON.stringify(transacoes));
+      try {
+        await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tipo, descricao, valor })
+        });
 
-      document.getElementById('descricao').value = '';
-      document.getElementById('valor').value = '';
+        document.getElementById('descricao').value = '';
+        document.getElementById('valor').value = '';
 
-      msg.style.color = '#2a7a2a';
-      msg.textContent = (tipo === 'receita' ? 'Receita' : 'Despesa') + ' adicionada!';
-      setTimeout(() => msg.textContent = '', 2500);
+        msg.style.color = '#2a7a2a';
+        msg.textContent = (tipo === 'receita' ? 'Receita' : 'Despesa') + ' adicionada!';
+        setTimeout(() => msg.textContent = '', 2500);
 
-      atualizarResumo();
+        carregarResumo();
+      } catch (err) {
+        msg.style.color = '#a32d2d';
+        msg.textContent = 'Erro ao salvar. Tente novamente.';
+      }
     }
 
     /* ── INICIALIZAÇÃO ── */
